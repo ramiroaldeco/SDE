@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Votá tu carroza favorita</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#f5f5f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
+    h1 { color:#dc3626; margin:10px 0 20px; text-align:center; }
+    .option { background:#fff; border-radius:10px; padding:12px 16px; margin:8px 0; width:320px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,.08);}
+    button { background:#f32f78; color:#fff; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; }
+    button:disabled { background:#bbb; cursor:default; }
+    .results { margin-top:20px; width:320px; background:#fff; border-radius:10px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,.08);}
+    .row { display:flex; justify-content:space-between; align-items:center; margin:8px 0;}
+    .bar { height:10px; border-radius:6px; background:#eee; overflow:hidden; }
+    .fill { height:100%; width:0%; background:#f32f78; }
+    small { color:#666; }
+  </style>
+</head>
+<body>
+
+  <h1>Votá tu carroza favorita</h1>
+
+  <div id="options"></div>
+
+  <div class="results">
+    <h2 style="margin:0 0 10px;color:#f32f78;">Resultados en vivo</h2>
+    <div id="results"></div>
+    <small id="total"></small>
+  </div>
+
+<script>
+const API = "https://TU-RENDER.onrender.com"; // <-- CAMBIAR
+
+const OPTIONS = ["PRIMER AÑO","SEGUNDO AÑO","TERCER AÑO","CUARTO AÑO","QUINTO AÑO"];
+const optionsEl = document.getElementById("options");
+const resultsEl = document.getElementById("results");
+const totalEl = document.getElementById("total");
+
+// clientId para identificar 1 voto por dispositivo
+const CLIENT_KEY = "votos_client_id";
+let clientId = localStorage.getItem(CLIENT_KEY);
+if (!clientId) {
+  // generar uno simple (podés pedirlo al server también en /new-client-id)
+  clientId = crypto.randomUUID();
+  localStorage.setItem(CLIENT_KEY, clientId);
+}
+
+// flag local para deshabilitar botones si ya votó este dispositivo
+const VOTED_KEY = "votos_ya_voto";
+let yaVoto = localStorage.getItem(VOTED_KEY) === "true";
+
+// render de opciones
+function renderOptions() {
+  optionsEl.innerHTML = "";
+  OPTIONS.forEach(opt => {
+    const div = document.createElement("div");
+    div.className = "option";
+    const span = document.createElement("span");
+    span.textContent = opt;
+    const btn = document.createElement("button");
+    btn.textContent = "Votar";
+    btn.disabled = yaVoto;
+    btn.onclick = () => votar(opt);
+    div.append(span, btn);
+    optionsEl.appendChild(div);
+  });
+}
+
+// votar
+async function votar(option) {
+  try {
+    const res = await fetch(API + "/vote", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ option, clientId })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(()=>({}));
+      alert(data.error || "No se pudo votar.");
+      return;
+    }
+    yaVoto = true;
+    localStorage.setItem(VOTED_KEY, "true");
+    renderOptions();
+    await cargarResultados(); // refrescar
+    alert("¡Gracias por votar!");
+  } catch (e) {
+    alert("Error de conexión.");
+  }
+}
+
+// resultados
+function rowTemplate(opt, pct, count) {
+  const wrap = document.createElement("div");
+  wrap.className = "row";
+  const left = document.createElement("div");
+  left.textContent = opt;
+  const right = document.createElement("div");
+  right.textContent = `${pct}% (${count})`;
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  const fill = document.createElement("div");
+  fill.className = "fill";
+  fill.style.width = pct + "%";
+  bar.appendChild(fill);
+  const container = document.createElement("div");
+  container.style.width = "100%";
+  container.appendChild(bar);
+
+  const line = document.createElement("div");
+  line.style.display = "grid";
+  line.style.gridTemplateColumns = "1fr auto";
+  line.style.gap = "8px";
+  line.style.alignItems = "center";
+  line.append(left, right);
+
+  const outer = document.createElement("div");
+  outer.append(line, container);
+  return outer;
+}
+
+async function cargarResultados() {
+  try {
+    const res = await fetch(API + "/results");
+    const data = await res.json();
+    resultsEl.innerHTML = "";
+    OPTIONS.forEach(opt => {
+      const pct = data.percentages[opt] ?? 0;
+      const count = data.counts[opt] ?? 0;
+      resultsEl.appendChild(rowTemplate(opt, pct, count));
+    });
+    totalEl.textContent = `Total de votos: ${data.total}`;
+  } catch {}
+}
+
+// refresco cada 2 segundos para “tiempo real”
+setInterval(cargarResultados, 2000);
+
+renderOptions();
+cargarResultados();
+</script>
+</body>
+</html>

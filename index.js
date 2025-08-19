@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = "./votes.json";
 
-// OPCIONES (tienen que coincidir con el front)
+// Deben coincidir con el frontend:
 const OPTIONS = ["PRIMER AÑO","SEGUNDO AÑO","TERCER AÑO","CUARTO AÑO","QUINTO AÑO"];
 
 app.use(cors({ origin: true, methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type"] }));
@@ -34,10 +34,10 @@ async function saveData(data) {
   await fs.rename(tmp, DATA_FILE);
 }
 
-// Salud del server
+// Ruta raíz (evita "Cannot GET /")
 app.get("/", (req, res) => res.send("OK"));
 
-// RESULTADOS
+// Resultados
 app.get("/results", async (req, res) => {
   try {
     const data = await loadData();
@@ -51,7 +51,7 @@ app.get("/results", async (req, res) => {
   }
 });
 
-// VOTO
+// Votar
 app.post("/vote", async (req, res) => {
   try {
     const { option, clientId } = req.body || {};
@@ -71,13 +71,7 @@ app.post("/vote", async (req, res) => {
   }
 });
 
-// opcional
 app.get("/new-client-id", (req, res) => res.json({ clientId: nanoid() }));
 
 app.listen(PORT, () => console.log("Servidor escuchando en puerto", PORT));
-
-
-app.listen(PORT, () => {
-  console.log("Servidor escuchando en puerto", PORT);
-});
 

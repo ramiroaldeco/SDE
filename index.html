@@ -30,7 +30,7 @@
   </div>
 
 <script>
-const API = "https://sde-x3c3.onrender.com"; // <-- CAMBIAR
+const API = "https://sde-x3c3.onrender.com";
 
 const OPTIONS = ["PRIMER AÑO","SEGUNDO AÑO","TERCER AÑO","CUARTO AÑO","QUINTO AÑO"];
 const optionsEl = document.getElementById("options");
@@ -77,6 +77,16 @@ async function votar(option) {
     });
     if (!res.ok) {
       const data = await res.json().catch(()=>({}));
+	  // si el total en el server es 0, liberar el candado local
+if (data.total === 0) {
+  localStorage.removeItem("votos_ya_voto");
+  // opcional: también regenerar el clientId
+  // localStorage.removeItem("votos_client_id");
+
+  yaVoto = false;      // volver a habilitar botones en UI
+  renderOptions();     // re-render para que se habiliten
+}
+
       alert(data.error || "No se pudo votar.");
       return;
     }
@@ -142,4 +152,3 @@ cargarResultados();
 </script>
 </body>
 </html>
-

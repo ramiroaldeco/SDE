@@ -31,6 +31,7 @@
 
 <script>
 const API = "https://sde-x3c3.onrender.com";
+const RESET_KEY = "votos_reset_at"; // versión de reset que anuncia el server
 
 const OPTIONS = ["PRIMER AÑO","SEGUNDO AÑO","TERCER AÑO","CUARTO AÑO","QUINTO AÑO"];
 const optionsEl = document.getElementById("options");
@@ -41,8 +42,7 @@ const totalEl = document.getElementById("total");
 const CLIENT_KEY = "votos_client_id";
 let clientId = localStorage.getItem(CLIENT_KEY);
 if (!clientId) {
-  // generar uno simple (podés pedirlo al server también en /new-client-id)
-  clientId = crypto.randomUUID();
+  clientId = crypto.randomUUID(); // o lo pedís al server en /new-client-id
   localStorage.setItem(CLIENT_KEY, clientId);
 }
 
@@ -60,7 +60,7 @@ function renderOptions() {
     span.textContent = opt;
     const btn = document.createElement("button");
     btn.textContent = "Votar";
-    btn.disabled = yaVoto;
+    btn.disabled = yaVoto; // si querés, podés dejarlo siempre habilitado y confiar solo en el server
     btn.onclick = () => votar(opt);
     div.append(span, btn);
     optionsEl.appendChild(div);
@@ -77,16 +77,6 @@ async function votar(option) {
     });
     if (!res.ok) {
       const data = await res.json().catch(()=>({}));
-	  // si el total en el server es 0, liberar el candado local
-if (data.total === 0) {
-  localStorage.removeItem("votos_ya_voto");
-  // opcional: también regenerar el clientId
-  // localStorage.removeItem("votos_client_id");
-
-  yaVoto = false;      // volver a habilitar botones en UI
-  renderOptions();     // re-render para que se habiliten
-}
-
       alert(data.error || "No se pudo votar.");
       return;
     }
@@ -134,6 +124,25 @@ async function cargarResultados() {
   try {
     const res = await fetch(API + "/results");
     const data = await res.json();
+
+    // 🔑 Detectar reseteo global anunciado por el server
+    const ultimoResetGuardado = localStorage.getItem(RESET_KEY);
+    if (data.resetAt && data.resetAt !== ultimoResetGuardado) {
+      localStorage.setItem(RESET_KEY, data.resetAt);
+      localStorage.removeItem(VOTED_KEY);   // habilita de nuevo el botón en este celu
+      // Opcional: también podés "resetear" el id de dispositivo
+      // localStorage.removeItem(CLIENT_KEY);
+      yaVoto = false;
+      renderOptions();
+    }
+
+    // (Opcional) Si total es 0, también liberá el candado local (sirve si abriste justo tras el reset)
+    if (data.total === 0) {
+      localStorage.removeItem(VOTED_KEY);
+      yaVoto = false;
+      renderOptions();
+    }
+
     resultsEl.innerHTML = "";
     OPTIONS.forEach(opt => {
       const pct = data.percentages[opt] ?? 0;

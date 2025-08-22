@@ -72,6 +72,22 @@ app.post("/vote", async (req, res) => {
 });
 
 app.get("/new-client-id", (req, res) => res.json({ clientId: nanoid() }));
+// Resetear votos
+app.post("/reset", async (req, res) => {
+  try {
+    const initial = {
+      options: OPTIONS,
+      counts: Object.fromEntries(OPTIONS.map(o => [o, 0])),
+      votedClientIds: {}
+    };
+    await saveData(initial);
+    res.json({ ok: true, msg: "Votos reseteados a 0" });
+  } catch (e) {
+    res.status(500).json({ error: "No se pudo resetear." });
+  }
+});
+
 
 app.listen(PORT, () => console.log("Servidor escuchando en puerto", PORT));
+
 

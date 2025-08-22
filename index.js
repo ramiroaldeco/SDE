@@ -22,12 +22,14 @@ async function loadData() {
     const initial = {
       options: OPTIONS,
       counts: Object.fromEntries(OPTIONS.map(o => [o, 0])),
-      votedClientIds: {}
+      votedClientIds: {},
+      resetAt: new Date().toISOString()
     };
     await fs.writeFile(DATA_FILE, JSON.stringify(initial, null, 2));
     return initial;
   }
 }
+
 async function saveData(data) {
   const tmp = DATA_FILE + ".tmp";
   await fs.writeFile(tmp, JSON.stringify(data, null, 2));
@@ -45,7 +47,7 @@ app.get("/results", async (req, res) => {
     const percentages = Object.fromEntries(
       Object.entries(data.counts).map(([opt, n]) => [opt, total ? +((n*100)/total).toFixed(1) : 0])
     );
-    res.json({ counts: data.counts, total, percentages });
+    res.json({ counts: data.counts, total, percentages, resetAt: data.resetAt });
   } catch {
     res.status(500).json({ error: "No se pudieron cargar resultados." });
   }
@@ -71,14 +73,17 @@ app.post("/vote", async (req, res) => {
   }
 });
 
+// Generar nuevo id opcional
 app.get("/new-client-id", (req, res) => res.json({ clientId: nanoid() }));
-// Resetear votos
+
+// Resetear votos + dispositivos
 app.post("/reset", async (req, res) => {
   try {
     const initial = {
       options: OPTIONS,
       counts: Object.fromEntries(OPTIONS.map(o => [o, 0])),
-      votedClientIds: {}
+      votedClientIds: {},
+      resetAt: new Date().toISOString()
     };
     await saveData(initial);
     res.json({ ok: true, msg: "Votos reseteados a 0" });
@@ -87,7 +92,4 @@ app.post("/reset", async (req, res) => {
   }
 });
 
-
 app.listen(PORT, () => console.log("Servidor escuchando en puerto", PORT));
-
-

@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 const DATA_FILE = "./votes.json";
 
 // Deben coincidir con el frontend:
-const OPTIONS = ["PRIMER AÑO","SEGUNDO AÑO","TERCER AÑO","CUARTO AÑO","QUINTO AÑO"];
+const OPTIONS = ["PRIMER AÑO IST","SEGUNDO AÑO IST","TERCER AÑO IST","CUARTO AÑO IST","CUARTO AÑO IPET","QUINTO AÑO IST","QUINTO AÑO IPET"];
 
 app.use(cors({ origin: true, methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type"] }));
 app.options("*", cors());
@@ -93,3 +93,4 @@ app.post("/reset", async (req, res) => {
 });
 
 app.listen(PORT, () => console.log("Servidor escuchando en puerto", PORT));
+

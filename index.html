@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Votá tu carroza favorita</title>
+  <title>Votá tu monigote favorito</title>
   <style>
     body { font-family: system-ui, sans-serif; background:#f5f5f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
     h1 { color:#dc3626; margin:10px 0 20px; text-align:center; }
@@ -19,7 +19,7 @@
 </head>
 <body>
 
-  <h1>Votá tu carroza favorita</h1>
+  <h1>Votá tu monigote favorito</h1>
 
   <div id="options"></div>
 
@@ -33,7 +33,7 @@
 const API = "https://sde-x3c3.onrender.com";
 const RESET_KEY = "votos_reset_at"; // versión de reset que anuncia el server
 
-const OPTIONS = ["PRIMER AÑO","SEGUNDO AÑO","TERCER AÑO","CUARTO AÑO","QUINTO AÑO"];
+const OPTIONS = ["PRIMER AÑO IST","SEGUNDO AÑO IST","TERCER AÑO IST","CUARTO AÑO IST","CUARTO AÑO IPET","QUINTO AÑO IST","QUINTO AÑO IPET"];
 const optionsEl = document.getElementById("options");
 const resultsEl = document.getElementById("results");
 const totalEl = document.getElementById("total");
@@ -161,3 +161,4 @@ cargarResultados();
 </script>
 </body>
 </html>
+

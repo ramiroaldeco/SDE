@@ -54,17 +54,36 @@ app.get("/results", async (req, res) => {
 });
 
 // Votar
+// Votar
 app.post("/vote", async (req, res) => {
   try {
     const { option, clientId } = req.body || {};
-    if (!option || !OPTIONS.includes(option)) return res.status(400).json({ error: "Opción inválida." });
-    if (!clientId || typeof clientId !== "string") return res.status(400).json({ error: "clientId faltante." });
+    if (!option || !OPTIONS.includes(option)) {
+      return res.status(400).json({ error: "Opción inválida." });
+    }
+    if (!clientId || typeof clientId !== "string") {
+      return res.status(400).json({ error: "clientId faltante." });
+    }
 
     const data = await loadData();
-    if (data.votedClientIds[clientId]) return res.status(409).json({ error: "Este dispositivo ya votó." });
 
+    // Detectar si la opción es básica u orientada
+    const esBasico = ["PRIMER AÑO IST","SEGUNDO AÑO IST","TERCER AÑO IST"].includes(option);
+    const ciclo = esBasico ? "basico" : "orientado";
+
+    // Crear registro por ciclo
+    if (!data.votedClientIds[clientId]) {
+      data.votedClientIds[clientId] = { basico: null, orientado: null };
+    }
+
+    // Si ya votó en ese ciclo, bloquear
+    if (data.votedClientIds[clientId][ciclo]) {
+      return res.status(409).json({ error: "Este dispositivo ya votó en " + ciclo });
+    }
+
+    // Registrar voto
     data.counts[option] += 1;
-    data.votedClientIds[clientId] = { option, at: new Date().toISOString() };
+    data.votedClientIds[clientId][ciclo] = { option, at: new Date().toISOString() };
     await saveData(data);
 
     res.json({ ok: true });
@@ -72,6 +91,7 @@ app.post("/vote", async (req, res) => {
     res.status(500).json({ error: "No se pudo registrar el voto." });
   }
 });
+
 
 // Generar nuevo id opcional
 app.get("/new-client-id", (req, res) => res.json({ clientId: nanoid() }));
@@ -93,4 +113,3 @@ app.post("/reset", async (req, res) => {
 });
 
 app.listen(PORT, () => console.log("Servidor escuchando en puerto", PORT));
-

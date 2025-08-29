@@ -1,11 +1,36 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Votá tu monigote favorito</title>
   <style>
-    body { font-family: system-ui, sans-serif; background:#f5f5f5; margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      /* Imagen de fondo */
+      background: url("CRONOGRAMA.png") no-repeat center center fixed;
+      background-size: cover;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    /* Capa de difuminado */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: inherit;
+      filter: blur(4px);   /* ajustá entre 3px y 6px según quieras */
+      transform: scale(1.05);
+      z-index: -1;
+    }
+
     h1 { color:#dc3626; margin:10px 0 20px; text-align:center; }
     .option { background:#fff; border-radius:10px; padding:12px 16px; margin:8px 0; width:320px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,.08);}
     button { background:#f32f78; color:#fff; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; }
@@ -190,7 +215,7 @@ async function cargarResultados() {
     };
 
     // Ciclo Básico
-    renderGrupo("Votos Ciclo Básico", BASICO);
+    renderGrupo("Votos Ciclo Básico ", BASICO);
     // Ciclo Orientado
     renderGrupo("Votos Ciclo Orientado", ORIENTADO);
 
@@ -205,5 +230,4 @@ renderOptions();
 cargarResultados();
 </script>
 </body>
-</html>                
-
+</html>

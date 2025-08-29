@@ -39,6 +39,8 @@ const OPTIONS = [
   "CUARTO AÑO IST","CUARTO AÑO IPET",
   "QUINTO AÑO IST","QUINTO AÑO IPET"
 ];
+const BASICO     = ["PRIMER AÑO IST","SEGUNDO AÑO IST","TERCER AÑO IST"];
+const ORIENTADO  = OPTIONS.filter(o => !BASICO.includes(o)); // el resto
 
 const optionsEl = document.getElementById("options");
 const resultsEl = document.getElementById("results");
@@ -144,24 +146,16 @@ async function cargarResultados() {
     const res = await fetch(API + "/results");
     const data = await res.json();
 
-    // 🔑 Detectar reseteo global anunciado por el server
+    // 🔑 Detectar reseteo global anunciado por el server (igual que antes)
     const ultimoResetGuardado = localStorage.getItem(RESET_KEY);
     if (data.resetAt && data.resetAt !== ultimoResetGuardado) {
       localStorage.setItem(RESET_KEY, data.resetAt);
-
-      // liberar ambos ciclos en este dispositivo
       localStorage.removeItem(VOTED_BASICO_KEY);
       localStorage.removeItem(VOTED_ORIENTADO_KEY);
       yaVotoBasico = false;
       yaVotoOrientado = false;
-
-      // Opcional: también podés resetear el clientId
-      // localStorage.removeItem(CLIENT_KEY);
-
       renderOptions();
     }
-
-    // (Opcional) Si total es 0, también liberá ambos ciclos (útil si abriste justo tras el reset)
     if (data.total === 0) {
       localStorage.removeItem(VOTED_BASICO_KEY);
       localStorage.removeItem(VOTED_ORIENTADO_KEY);
@@ -170,16 +164,40 @@ async function cargarResultados() {
       renderOptions();
     }
 
+    // --- Render de resultados por grupo ---
     resultsEl.innerHTML = "";
-    OPTIONS.forEach(opt => {
-      const pct = data.percentages[opt] ?? 0;
-      const count = data.counts[opt] ?? 0;
-      resultsEl.appendChild(rowTemplate(opt, pct, count));
-    });
+
+    const titulo = (txt) => {
+      const h = document.createElement("h3");
+      h.textContent = txt;
+      h.style.margin = "12px 0 8px";
+      h.style.color = "#333";
+      return h;
+    };
+
+    const renderGrupo = (nombre, opcionesGrupo) => {
+      const grupoTotal = opcionesGrupo
+        .map(opt => data.counts[opt] ?? 0)
+        .reduce((a,b)=>a+b,0);
+
+      resultsEl.appendChild(titulo(nombre));
+
+      opcionesGrupo.forEach(opt => {
+        const count = data.counts[opt] ?? 0;
+        const pct = grupoTotal ? +((count*100)/grupoTotal).toFixed(1) : 0;
+        resultsEl.appendChild(rowTemplate(opt, pct, count));
+      });
+    };
+
+    // Ciclo Básico
+    renderGrupo("Votos - Ciclo Básico (1°, 2° y 3°)", BASICO);
+    // Ciclo Orientado
+    renderGrupo("Votos - Ciclo Orientado (4°, 5° ...)", ORIENTADO);
+
+    // Podés dejar el total general debajo si querés
     totalEl.textContent = `Total de votos: ${data.total}`;
   } catch {}
 }
-
 // refresco cada 2 segundos para “tiempo real”
 setInterval(cargarResultados, 2000);
 
@@ -187,4 +205,4 @@ renderOptions();
 cargarResultados();
 </script>
 </body>
-</html>
+</html>                

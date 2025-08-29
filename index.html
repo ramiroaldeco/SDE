@@ -33,64 +33,83 @@
 const API = "https://sde-x3c3.onrender.com";
 const RESET_KEY = "votos_reset_at"; // versión de reset que anuncia el server
 
-const OPTIONS = ["PRIMER AÑO IST","SEGUNDO AÑO IST","TERCER AÑO IST","CUARTO AÑO IST","CUARTO AÑO IPET","QUINTO AÑO IST","QUINTO AÑO IPET"];
+// Ajustá si agregás 6°/7° y/o IPET/IST extra
+const OPTIONS = [
+  "PRIMER AÑO IST","SEGUNDO AÑO IST","TERCER AÑO IST",
+  "CUARTO AÑO IST","CUARTO AÑO IPET",
+  "QUINTO AÑO IST","QUINTO AÑO IPET"
+];
+
 const optionsEl = document.getElementById("options");
 const resultsEl = document.getElementById("results");
-const totalEl = document.getElementById("total");
+const totalEl   = document.getElementById("total");
 
-// clientId para identificar 1 voto por dispositivo
+// ------- ID de cliente (1 por dispositivo) -------
 const CLIENT_KEY = "votos_client_id";
 let clientId = localStorage.getItem(CLIENT_KEY);
 if (!clientId) {
-  clientId = crypto.randomUUID(); // o lo pedís al server en /new-client-id
+  clientId = crypto.randomUUID(); // también podrías pedirlo al server: /new-client-id
   localStorage.setItem(CLIENT_KEY, clientId);
 }
 
-// flag local para deshabilitar botones si ya votó este dispositivo
-const VOTED_KEY = "votos_ya_voto";
-let yaVoto = localStorage.getItem(VOTED_KEY) === "true";
+// ------- Flags por ciclo -------
+const VOTED_BASICO_KEY     = "votos_ya_voto_basico";
+const VOTED_ORIENTADO_KEY  = "votos_ya_voto_orientado";
+let yaVotoBasico    = localStorage.getItem(VOTED_BASICO_KEY) === "true";
+let yaVotoOrientado = localStorage.getItem(VOTED_ORIENTADO_KEY) === "true";
 
-// render de opciones
+// Render de opciones
 function renderOptions() {
   optionsEl.innerHTML = "";
   OPTIONS.forEach(opt => {
-    const div = document.createElement("div");
+    const div  = document.createElement("div");
     div.className = "option";
     const span = document.createElement("span");
     span.textContent = opt;
-    const btn = document.createElement("button");
+    const btn  = document.createElement("button");
     btn.textContent = "Votar";
-    btn.disabled = yaVoto; // si querés, podés dejarlo siempre habilitado y confiar solo en el server
-    btn.onclick = () => votar(opt);
+
+    const esBasico = ["PRIMER AÑO IST","SEGUNDO AÑO IST","TERCER AÑO IST"].includes(opt);
+    btn.disabled = esBasico ? yaVotoBasico : yaVotoOrientado;
+
+    btn.onclick = () => votar(opt, esBasico);
     div.append(span, btn);
     optionsEl.appendChild(div);
   });
 }
 
-// votar
-async function votar(option) {
+// Votar
+async function votar(option, esBasico) {
   try {
     const res = await fetch(API + "/vote", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ option, clientId })
     });
+    const data = await res.json();
+
     if (!res.ok) {
-      const data = await res.json().catch(()=>({}));
       alert(data.error || "No se pudo votar.");
       return;
     }
-    yaVoto = true;
-    localStorage.setItem(VOTED_KEY, "true");
+
+    if (esBasico) {
+      yaVotoBasico = true;
+      localStorage.setItem(VOTED_BASICO_KEY, "true");
+    } else {
+      yaVotoOrientado = true;
+      localStorage.setItem(VOTED_ORIENTADO_KEY, "true");
+    }
+
     renderOptions();
-    await cargarResultados(); // refrescar
+    await cargarResultados();
     alert("¡Gracias por votar!");
   } catch (e) {
     alert("Error de conexión.");
   }
 }
 
-// resultados
+// Resultados
 function rowTemplate(opt, pct, count) {
   const wrap = document.createElement("div");
   wrap.className = "row";
@@ -129,17 +148,25 @@ async function cargarResultados() {
     const ultimoResetGuardado = localStorage.getItem(RESET_KEY);
     if (data.resetAt && data.resetAt !== ultimoResetGuardado) {
       localStorage.setItem(RESET_KEY, data.resetAt);
-      localStorage.removeItem(VOTED_KEY);   // habilita de nuevo el botón en este celu
-      // Opcional: también podés "resetear" el id de dispositivo
+
+      // liberar ambos ciclos en este dispositivo
+      localStorage.removeItem(VOTED_BASICO_KEY);
+      localStorage.removeItem(VOTED_ORIENTADO_KEY);
+      yaVotoBasico = false;
+      yaVotoOrientado = false;
+
+      // Opcional: también podés resetear el clientId
       // localStorage.removeItem(CLIENT_KEY);
-      yaVoto = false;
+
       renderOptions();
     }
 
-    // (Opcional) Si total es 0, también liberá el candado local (sirve si abriste justo tras el reset)
+    // (Opcional) Si total es 0, también liberá ambos ciclos (útil si abriste justo tras el reset)
     if (data.total === 0) {
-      localStorage.removeItem(VOTED_KEY);
-      yaVoto = false;
+      localStorage.removeItem(VOTED_BASICO_KEY);
+      localStorage.removeItem(VOTED_ORIENTADO_KEY);
+      yaVotoBasico = false;
+      yaVotoOrientado = false;
       renderOptions();
     }
 
@@ -161,4 +188,3 @@ cargarResultados();
 </script>
 </body>
 </html>
-
